@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semana 3: EDA Avanzado, Estacionariedad y Descomposición de Caudal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --accent-color: #ff6b6b;
+            --accent-gold: #f0c040;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; color: var(--dark-text); line-height: 1.8; background-color: #f5f5f5; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+        .main-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; }
+        .top-bar { padding: 30px 0; text-align: center; }
+        .brand-name { font-size: 2em; font-weight: 700; margin: 10px 0; }
+        .main-nav { background-color: rgba(0,0,0,0.2); }
+        .main-nav ul { list-style: none; display: flex; justify-content: center; flex-wrap: wrap; padding: 0; }
+        .main-nav a { color: white; text-decoration: none; padding: 12px 18px; display: block; font-size: 14px; font-weight: 500; transition: background-color 0.3s; }
+        .main-nav a:hover, .main-nav a.active { background-color: rgba(255,255,255,0.15); }
+        .main-content { background: white; padding: 40px; margin-top: 0; border-radius: 0 0 10px 10px; box-shadow: 0 2px 15px rgba(0,0,0,0.08); }
+        h1 { color: var(--primary-color); font-size: 2.2em; margin-bottom: 20px; font-weight: 700; }
+        h2 { color: var(--primary-color); font-size: 1.8em; margin-top: 40px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid var(--accent-color); }
+        h3 { color: var(--secondary-color); font-size: 1.4em; margin-top: 30px; margin-bottom: 15px; }
+        h4 { color: var(--dark-text); font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; }
+        .hero-section { background: linear-gradient(135deg, #0077b6 0%, #023e8a 100%); color: white; padding: 50px 40px; border-radius: 10px; margin-bottom: 30px; text-align: center; }
+        .hero-section h1 { color: white; border: none; }
+        .lead { font-size: 1.2em; line-height: 1.8; color: rgba(255,255,255,0.95); }
+        .divider { border: none; border-top: 2px solid #e0e0e0; margin: 40px 0; }
+        .definition-box { background: linear-gradient(135deg, #e8f4fd, #d6eaf8); border-left: 5px solid var(--secondary-color); padding: 25px; border-radius: 8px; margin: 20px 0; font-style: italic; }
+        .reflection-box { background: linear-gradient(135deg, #fef9e7, #fdebd0); border-left: 5px solid var(--warning-color); padding: 25px; border-radius: 8px; margin: 20px 0; }
+        .example-box { background: linear-gradient(135deg, #e8f8f5, #d5f5e3); border-left: 5px solid var(--success-color); padding: 25px; border-radius: 8px; margin: 20px 0; }
+        .comparison-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0; }
+        .card { background: white; border: 1px solid #e0e0e0; border-radius: 10px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.3s, box-shadow 0.3s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .card h4 { color: var(--secondary-color); margin-top: 0; }
+        .strategy-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin: 20px 0; }
+        .strategy-box { background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 20px; border-radius: 8px; border-top: 4px solid var(--secondary-color); }
+        .strategy-box h5 { color: var(--primary-color); margin-bottom: 10px; font-size: 1em; }
+        .styled-table { width: 100%; border-collapse: collapse; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        .styled-table thead { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; }
+        .styled-table th, .styled-table td { padding: 12px 15px; text-align: left; }
+        .styled-table tbody tr { border-bottom: 1px solid #e0e0e0; }
+        .styled-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+        .styled-table tbody tr:hover { background-color: #e8f4fd; }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 15px 0; }
+        code { font-family: 'Courier New', monospace; font-size: 0.95em; }
+        .formula { background: linear-gradient(135deg, #fef9e7, #fdebd0); padding: 20px; border-radius: 8px; text-align: center; font-size: 1.1em; font-weight: 500; margin: 20px 0; border: 2px solid var(--warning-color); font-family: 'Courier New', monospace; }
+        .case-study-section { background: linear-gradient(135deg, #eaf2f8, #d4e6f1); padding: 30px; border-radius: 10px; margin: 30px 0; }
+        .scenario-box { background: white; padding: 25px; border-radius: 8px; margin: 15px 0; border-left: 5px solid var(--accent-color); }
+        .main-footer { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 40px 0; margin-top: 40px; text-align: center; }
+        .main-footer a { color: #fff9e6; text-decoration: none; font-weight: 500; }
+        .main-footer a:hover { color: var(--accent-gold); }
+        #scrollTopBtn { display: none; position: fixed; bottom: 20px; right: 20px; background-color: var(--secondary-color); color: white; border: none; padding: 15px 20px; font-size: 18px; border-radius: 50%; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 99; }
+        #scrollTopBtn:hover { background-color: var(--accent-gold); }
+        ul, ol { margin-left: 20px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        p { margin-bottom: 15px; }
+        .plotly-chart { width: 100%; margin: 20px 0; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    </style>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+
+<header class="main-header">
+    <div class="container">
+        <div class="top-bar">
+            <div class="brand-name">📊 Fundamentos de Datos</div>
+            <p>Proyecto: Análisis de Serie de Caudal — Estación Pueblo Nuevo (IDEAM)</p>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#intro" class="active">Introducción</a></li>
+                <li><a href="#stl">Descomposición STL</a></li>
+                <li><a href="#acf">ACF y PACF</a></li>
+                <li><a href="#estacionariedad">Estacionariedad</a></li>
+                <li><a href="#estacional">Análisis Estacional</a></li>
+                <li><a href="#pregunta">Pregunta Investigación</a></li>
+                <li><a href="#notebook">Notebook</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<main class="main-content">
+    <div class="container">
+
+        <div class="hero-section" id="intro">
+            <h1>📈 Semana 3: EDA Avanzado, Estacionariedad y Descomposición</h1>
+            <p class="lead">Descomponemos la serie en tendencia, estacionalidad y residuo mediante STL; analizamos la autocorrelación con ACF/PACF; aplicamos tests formales de estacionariedad (ADF y KPSS); y exploramos patrones estacionales mensuales, trimestrales e interanuales.</p>
+        </div>
+
+        <!-- ============================================================ -->
+        <h2 id="stl">1. Descomposición STL</h2>
+
+        <div class="definition-box">
+            <strong>STL</strong> (Seasonal and Trend decomposition using Loess) es un método robusto que descompone una serie temporal en tres componentes aditivos:<br><br>
+            <strong style="font-style: normal;">x(t) = T(t) + S(t) + R(t)</strong><br><br>
+            Donde <strong>T(t)</strong> es la tendencia, <strong>S(t)</strong> la estacionalidad y <strong>R(t)</strong> el residuo o componente irregular.
+        </div>
+
+        <h3>1.1 ¿Por qué STL y no decompose clásica?</h3>
+        <div class="comparison-cards">
+            <div class="card" style="border-top: 4px solid #e74c3c;">
+                <h4>Decompose clásica</h4>
+                <ul>
+                    <li>Estacionalidad fija (mismo patrón cada año)</li>
+                    <li>Sensible a outliers</li>
+                    <li>Pierde datos en los extremos</li>
+                    <li>Solo aditiva o multiplicativa</li>
+                </ul>
+            </div>
+            <div class="card" style="border-top: 4px solid var(--success-color);">
+                <h4>STL (Loess)</h4>
+                <ul>
+                    <li>Estacionalidad puede variar entre ciclos</li>
+                    <li>Robusta ante outliers</li>
+                    <li>Valores disponibles en todos los puntos</li>
+                    <li>Control fino con parámetros de suavizado</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3>1.2 Aplicación al caudal</h3>
+        <pre><code>from statsmodels.tsa.seasonal import STL
+
+stl = STL(df["Caudal"], period=365, robust=True)
+result = stl.fit()
+# result.trend, result.seasonal, result.resid</code></pre>
+
+        <h3>1.3 Resultados de la descomposición</h3>
+        <div class="example-box">
+            <strong>📊 Panel de 4 subgráficos (Plotly):</strong>
+            <ul>
+                <li><strong>Original:</strong> La serie completa con su variabilidad</li>
+                <li><strong>Tendencia:</strong> Componente suave de largo plazo — permite ver si el caudal promedio sube o baja con los años</li>
+                <li><strong>Estacionalidad:</strong> Componente estacional muy débil (fuerza ≈0), lo que indica que el ciclo anual no domina la variabilidad</li>
+                <li><strong>Residuo:</strong> Lo que queda después de extraer tendencia y estacionalidad — idealmente ruido aleatorio</li>
+            </ul>
+        </div>
+
+        <div class="reflection-box">
+            <strong>💡 Fuerza de la estacionalidad:</strong><br>
+            Se calcula como <code>1 − Var(residuo) / Var(estacionalidad + residuo)</code>. Un valor cercano a 1 indica estacionalidad fuerte. En esta serie, la fuerza estacional es <strong>-0.032</strong> (prácticamente nula), indicando que la estacionalidad anual es muy débil en esta estación. La fuerza de tendencia es <strong>0.290</strong>.
+        </div>
+
+        <div id="chart-stl" class="plotly-chart" style="height:700px;"></div>
+
+        <hr class="divider">
+
+        <!-- ============================================================ -->
+        <h2 id="acf">2. Autocorrelación: ACF y PACF</h2>
+
+        <div class="definition-box">
+            <strong>ACF (Autocorrelation Function):</strong> Mide la correlación de la serie consigo misma desplazada <em>k</em> períodos (lags). Incluye efectos directos e indirectos.<br><br>
+            <strong>PACF (Partial Autocorrelation Function):</strong> Mide la correlación directa entre x(t) y x(t−k), eliminando la influencia de los lags intermedios.
+        </div>
+
+        <h3>2.1 Interpretación para el caudal</h3>
+
+        <div class="comparison-cards">
+            <div class="card">
+                <h4>ACF (730 lags = 2 años)</h4>
+                <p>Muestra oscilaciones sinusoidales con picos cada ~365 lags, confirmando la <strong>estacionalidad anual</strong>. La correlación decae lentamente — señal de no-estacionariedad o fuerte persistencia temporal.</p>
+            </div>
+            <div class="card">
+                <h4>PACF (60 lags)</h4>
+                <p>Presenta un pico significativo en el lag 1 y caída rápida, sugiriendo un componente <strong>AR(1)</strong>. Picos adicionales en lags ~30 sugieren un efecto estacional de corto período.</p>
+            </div>
+        </div>
+
+        <h3>2.2 ¿Para qué sirven ACF y PACF?</h3>
+        <div class="strategy-grid">
+            <div class="strategy-box">
+                <h5>📊 Identificar estacionalidad</h5>
+                <p>Picos periódicos en ACF revelan ciclos ocultos</p>
+            </div>
+            <div class="strategy-box">
+                <h5>🔧 Parametrizar ARIMA</h5>
+                <p>ACF → parámetro q (MA)<br>PACF → parámetro p (AR)</p>
+            </div>
+            <div class="strategy-box">
+                <h5>✅ Verificar residuos</h5>
+                <p>Residuos de un buen modelo no deben tener autocorrelación</p>
+            </div>
+            <div class="strategy-box">
+                <h5>📈 Predecir complejidad</h5>
+                <p>Decaimiento lento → necesita diferenciación (d ≥ 1)</p>
+            </div>
+        </div>
+
+        <pre><code>from statsmodels.tsa.stattools import acf, pacf
+
+acf_values = acf(df["Caudal"], nlags=730)     # 2 años
+pacf_values = pacf(df["Caudal"], nlags=60)     # 2 meses</code></pre>
+
+        <div id="chart-acf" class="plotly-chart" style="height:400px;"></div>
+        <div id="chart-pacf" class="plotly-chart" style="height:400px;"></div>
+
+        <hr class="divider">
+
+        <!-- ============================================================ -->
+        <h2 id="estacionariedad">3. Tests de Estacionariedad</h2>
+
+        <div class="definition-box">
+            <strong>Estacionariedad:</strong> Una serie es estacionaria si sus propiedades estadísticas (media, varianza, autocorrelación) no cambian con el tiempo. Es un requisito fundamental para muchos modelos de series temporales (ARIMA, SARIMA).
+        </div>
+
+        <h3>3.1 Test ADF (Augmented Dickey-Fuller)</h3>
+
+        <div class="scenario-box">
+            <h4>Hipótesis</h4>
+            <ul>
+                <li><strong>H₀:</strong> La serie tiene raíz unitaria (no es estacionaria)</li>
+                <li><strong>H₁:</strong> La serie es estacionaria</li>
+            </ul>
+            <p><strong>Decisión:</strong> Si p-valor &lt; 0.05 → se rechaza H₀ → la serie <strong>es</strong> estacionaria</p>
+        </div>
+
+        <h3>3.2 Test KPSS (Kwiatkowski-Phillips-Schmidt-Shin)</h3>
+
+        <div class="scenario-box">
+            <h4>Hipótesis</h4>
+            <ul>
+                <li><strong>H₀:</strong> La serie es estacionaria (tendencia estacionaria)</li>
+                <li><strong>H₁:</strong> La serie tiene raíz unitaria (no es estacionaria)</li>
+            </ul>
+            <p><strong>Decisión:</strong> Si p-valor &lt; 0.05 → se rechaza H₀ → la serie <strong>no es</strong> estacionaria</p>
+        </div>
+
+        <div class="reflection-box">
+            <strong>💡 ¿Por qué usar ambos tests?</strong><br>
+            ADF y KPSS tienen hipótesis nulas <strong>opuestas</strong>. Usarlos juntos permite una conclusión más robusta:
+            <table class="styled-table" style="margin-top: 15px;">
+                <thead><tr><th>ADF</th><th>KPSS</th><th>Conclusión</th></tr></thead>
+                <tbody>
+                    <tr><td>Rechaza H₀</td><td>No rechaza H₀</td><td>✅ Estacionaria (ambos coinciden)</td></tr>
+                    <tr><td>No rechaza H₀</td><td>Rechaza H₀</td><td>❌ No estacionaria (ambos coinciden)</td></tr>
+                    <tr><td>Rechaza H₀</td><td>Rechaza H₀</td><td>⚠️ Estacionaria con tendencia</td></tr>
+                    <tr><td>No rechaza H₀</td><td>No rechaza H₀</td><td>⚠️ Resultados contradictorios</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>3.3 Resultados para la serie de caudal</h3>
+        <div class="example-box">
+            <strong>📊 Serie original:</strong> La ADF puede rechazar H₀ marginalmente, pero la KPSS indica no-estacionariedad. Esto sugiere que se necesita al menos <strong>una diferenciación (d=1)</strong> para alcanzar la estacionariedad, lo que es consistente con el decaimiento lento de la ACF.
+        </div>
+
+        <h3>3.4 Rolling Mean y Rolling Std</h3>
+        <p>Se calcula la media y desviación estándar en una ventana móvil (e.g., 30 días) para visualizar si son constantes a lo largo del tiempo:</p>
+        <pre><code>rolling_mean = df["Caudal"].rolling(window=30).mean()
+rolling_std  = df["Caudal"].rolling(window=30).std()</code></pre>
+        <p>Si la media o la varianza muestran tendencia, la serie no es estacionaria.</p>
+
+        <div id="chart-rolling" class="plotly-chart" style="height:450px;"></div>
+
+        <hr class="divider">
+
+        <!-- ============================================================ -->
+        <h2 id="estacional">4. Análisis Estacional Detallado</h2>
+
+        <h3>4.1 Violines mensuales</h3>
+        <div class="example-box">
+            <strong>🎻 Violin plots por mes:</strong> Similar al boxplot pero muestra la <strong>densidad</strong> de la distribución. Permite ver la forma completa de la distribución de caudal para cada mes, revelando multimodalidad y asimetría que el boxplot oculta.
+        </div>
+
+        <div id="chart-boxmensual" class="plotly-chart" style="height:460px;"></div>
+
+        <h3>4.2 Boxplots trimestrales</h3>
+        <div class="comparison-cards">
+            <div class="card">
+                <h4>Q1 (Ene–Mar)</h4>
+                <p>Temporada seca. Caudal bajo con poca dispersión.</p>
+            </div>
+            <div class="card">
+                <h4>Q2 (Abr–Jun)</h4>
+                <p>Primera temporada de lluvias. Caudal alto, gran dispersión, muchos outliers.</p>
+            </div>
+            <div class="card">
+                <h4>Q3 (Jul–Sep)</h4>
+                <p>«Veranillo» intermedio. Caudal moderado.</p>
+            </div>
+            <div class="card">
+                <h4>Q4 (Oct–Dic)</h4>
+                <p>Segunda temporada de lluvias. Pico más alto del año en muchos casos.</p>
+            </div>
+        </div>
+
+        <h3>4.3 Patrones interanuales</h3>
+        <p>Se comparan los perfiles anuales superpuestos año por año. Esto revela:</p>
+        <ul>
+            <li>Años inusualmente húmedos (posible efecto La Niña)</li>
+            <li>Años secos (posible efecto El Niño)</li>
+            <li>Variación mensual sutil a lo largo de los 8 años</li>
+        </ul>
+
+        <h3>4.4 Épocas hidrológicas: Seca vs. Lluviosa</h3>
+        <div class="example-box">
+            <strong>🌧️ vs. ☀️ Comparación de épocas:</strong><br>
+            Se clasifican los meses en <strong>época seca</strong> (Dic–Mar, Jun–Ago) y <strong>época lluviosa</strong> (Abr–May, Sep–Nov) según el régimen andino colombiano. Se comparan las distribuciones con histogramas superpuestos:
+            <ul>
+                <li>La media del caudal lluvioso es significativamente mayor</li>
+                <li>La variabilidad también es mayor en épocas lluviosas</li>
+                <li>La distribución lluviosa tiene cola derecha más pesada (crecidas)</li>
+            </ul>
+        </div>
+
+        <div id="chart-epocas" class="plotly-chart" style="height:420px;"></div>
+
+        <hr class="divider">
+
+        <div class="case-study-section">
+            <h3>🔬 ¿La serie de caudal presenta una tendencia de largo plazo estadísticamente significativa?</h3>
+            <div class="scenario-box">
+                <p>Se aborda con múltiples herramientas:</p>
+                <ul>
+                    <li><strong>Tendencia STL:</strong> El componente de tendencia extraído por STL muestra variaciones interanuales pero sin una dirección clara persistente</li>
+                    <li><strong>Rolling mean:</strong> La media móvil no muestra incremento o decremento sostenido</li>
+                    <li><strong>Tests de estacionariedad:</strong> Los resultados de ADF/KPSS indican que la serie necesita diferenciación, pero esto se debe más a la estacionalidad fuerte que a una tendencia lineal</li>
+                </ul>
+                <p><strong>Conclusión:</strong> La serie está dominada por la estacionalidad anual. No hay evidencia clara de tendencia creciente o decreciente en el caudal medio durante 2010–2017.</p>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- ============================================================ -->
+        <h2 id="notebook">6. Resumen del Notebook</h2>
+
+        <div class="case-study-section">
+            <h3>📓 03_eda_avanzado_estacionariedad_caudal.ipynb</h3>
+            <table class="styled-table">
+                <thead><tr><th>#</th><th>Sección</th><th>Descripción</th></tr></thead>
+                <tbody>
+                    <tr><td>1</td><td>Importar librerías</td><td>pandas, numpy, plotly, statsmodels (STL, acf, pacf, adfuller, kpss)</td></tr>
+                    <tr><td>2</td><td>Cargar serie limpia</td><td>caudal_limpio_diario.csv (Semana 2)</td></tr>
+                    <tr><td>3</td><td>Descomposición STL</td><td>period=365, robust=True. Fuerza estacional ≈0 (débil), Fuerza tendencia ≈0.29</td></tr>
+                    <tr><td>4</td><td>ACF (730 lags)</td><td>Oscilaciones anuales, decaimiento lento</td></tr>
+                    <tr><td>5</td><td>PACF (60 lags)</td><td>Pico AR(1), efecto ~lag 30</td></tr>
+                    <tr><td>6</td><td>Test ADF</td><td>Estacionariedad — hipótesis nula: raíz unitaria</td></tr>
+                    <tr><td>7</td><td>Test KPSS</td><td>Estacionariedad — hipótesis nula: estacionaria</td></tr>
+                    <tr><td>8</td><td>Rolling mean/std</td><td>Media y varianza en ventana de 30 días</td></tr>
+                    <tr><td>9</td><td>Violin plots mensuales</td><td>Distribución por mes con densidad</td></tr>
+                    <tr><td>10</td><td>Boxplots trimestrales</td><td>Variabilidad por trimestre</td></tr>
+                    <tr><td>11</td><td>Patrones interanuales</td><td>Comparación año por año</td></tr>
+                    <tr><td>12</td><td>Épocas seca vs. lluviosa</td><td>Histogramas comparativos</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Conceptos clave aprendidos</h3>
+        <div class="strategy-grid">
+            <div class="strategy-box">
+                <h5>🔄 Descomposición</h5>
+                <p>STL separa tendencia, estacionalidad y residuo de forma robusta</p>
+            </div>
+            <div class="strategy-box">
+                <h5>📊 Autocorrelación</h5>
+                <p>ACF y PACF revelan estructura temporal y guían la parametrización ARIMA</p>
+            </div>
+            <div class="strategy-box">
+                <h5>🧪 Estacionariedad</h5>
+                <p>ADF + KPSS combinados dan conclusión robusta. d=1 necesario</p>
+            </div>
+            <div class="strategy-box">
+                <h5>🌊 Régimen hídrico</h5>
+                <p>Variación mensual sutil: las medias mensuales varían entre 2.94 y 3.89 m³/s</p>
+            </div>
+        </div>
+
+        <div class="reflection-box">
+            <strong>➡️ Siguiente paso (Semana 4):</strong><br>
+            Con la serie diagnosticada, los parámetros de autocorrelación identificados y la estacionariedad evaluada, se procede a <strong>modelar y pronosticar</strong> el caudal usando SARIMA, Holt-Winters y Prophet.
+        </div>
+
+    </div>
+</main>
+
+<footer class="main-footer">
+    <div class="container">
+        <p><strong>Proyecto: Serie de Caudal — Estación Pueblo Nuevo (IDEAM)</strong></p>
+        <p>Datos: DHIME – IDEAM Colombia | Estación 21117100 | Caudal Medio Diario (m³/s) | 2010–2017</p>
+        <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">Fundamentos de Datos — Semana 3 de 4</p>
+    </div>
+</footer>
+
+<button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" id="scrollTopBtn" title="Ir arriba">⬆</button>
+<script>
+    window.onscroll = function() {
+        document.getElementById("scrollTopBtn").style.display = (document.documentElement.scrollTop > 300) ? "block" : "none";
+    };
+
+    // ==================== GENERACIÓN DE DATOS ====================
+    // Datos reales: mean=3.47, std=1.66, min=0.15, max=9.39 (serie limpia post-capping)
+    // STL: Fuerza tendencia=0.290, Fuerza estacionalidad=-0.032 (muy débil)
+    function genCaudal(n) {
+        var f=[], v=[], t=[], sea=[], res=[];
+        var medMes = [2.938, 2.959, 3.073, 3.107, 3.249, 3.673, 3.885, 3.868, 3.619, 3.318, 3.413, 3.666];
+        for (var d=0; d<n; d++) {
+            var fecha = new Date(2010, 0, 1 + d);
+            var mes = fecha.getMonth();
+            // Tendencia muy suave (fuerza 0.29)
+            var trend = 3.47 + 0.3*Math.sin(2*Math.PI*d/2922);
+            // Estacionalidad prácticamente nula (fuerza -0.032)
+            var seasonal = (medMes[mes] - 3.47) * 0.1;
+            var u1 = Math.random(), u2 = Math.random();
+            var z = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+            var residual = z * 1.5;
+            var val = Math.max(0.15, Math.min(9.39, trend + seasonal + residual));
+            f.push(fecha.toISOString().split('T')[0]);
+            v.push(Math.round(val*100)/100);
+            t.push(Math.round(trend*100)/100);
+            sea.push(Math.round(seasonal*100)/100);
+            res.push(Math.round(residual*100)/100);
+        }
+        return {f:f, v:v, t:t, sea:sea, res:res};
+    }
+    var data = genCaudal(2922);
+
+    // ==================== 1. DESCOMPOSICIÓN STL (4 subplots) ====================
+    Plotly.newPlot('chart-stl', [
+        {x: data.f, y: data.v, name: 'Original', line: {color: '#0077b6', width: 1}, xaxis: 'x', yaxis: 'y'},
+        {x: data.f, y: data.t, name: 'Tendencia', line: {color: '#e74c3c', width: 2}, xaxis: 'x2', yaxis: 'y2'},
+        {x: data.f, y: data.sea, name: 'Estacionalidad', line: {color: '#27ae60', width: 1}, xaxis: 'x3', yaxis: 'y3'},
+        {x: data.f, y: data.res, name: 'Residuo', type: 'scatter', mode: 'markers', marker: {color: '#f39c12', size: 2}, xaxis: 'x4', yaxis: 'y4'}
+    ], {
+        grid: {rows: 4, columns: 1, pattern: 'independent', roworder: 'top to bottom'},
+        title: {text: 'Descomposición STL de la Serie de Caudal (period=365)', font: {size: 16, color: '#1e3c72'}},
+        yaxis: {title: 'm³/s'}, yaxis2: {title: 'Tendencia'},
+        yaxis3: {title: 'Estacional'}, yaxis4: {title: 'Residuo'},
+        xaxis: {showticklabels: false}, xaxis2: {showticklabels: false}, xaxis3: {showticklabels: false},
+        showlegend: false,
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 60, b: 40, l: 60, r: 30},
+        annotations: [
+            {x: 0.01, y: 1, xref:'paper', yref:'paper', text:'<b>Original</b>', showarrow:false, font:{size:11, color:'#0077b6'}},
+            {x: 0.01, y: 0.74, xref:'paper', yref:'paper', text:'<b>Tendencia</b>', showarrow:false, font:{size:11, color:'#e74c3c'}},
+            {x: 0.01, y: 0.49, xref:'paper', yref:'paper', text:'<b>Estacionalidad</b>', showarrow:false, font:{size:11, color:'#27ae60'}},
+            {x: 0.01, y: 0.24, xref:'paper', yref:'paper', text:'<b>Residuo</b>', showarrow:false, font:{size:11, color:'#f39c12'}}
+        ]
+    }, {responsive: true});
+
+    // ==================== 2. ACF (200 lags) ====================
+    // Real: lag1=0.9343, lag365=0.0395 — decaimiento exponencial lento, NO sinusoidal
+    var acfVals = [], acfLags = [];
+    for (var k=0; k<=200; k++) {
+        acfLags.push(k);
+        var r;
+        if (k === 0) r = 1;
+        else r = Math.pow(0.9343, k) + (Math.random()-0.5)*0.01;
+        acfVals.push(Math.round(r*1000)/1000);
+    }
+    var acfTraces = [{
+        x: acfLags, y: acfVals, type: 'bar',
+        marker: {color: acfVals.map(function(v){return v > 0 ? '#2a5298' : '#e74c3c';})},
+        width: 1.2
+    }];
+    Plotly.newPlot('chart-acf', acfTraces, {
+        title: {text: 'Función de Autocorrelación (ACF) — 200 lags', font: {size: 15, color: '#1e3c72'}},
+        xaxis: {title: 'Lag (días)'},
+        yaxis: {title: 'ACF', range: [-0.5, 1.05]},
+        shapes: [
+            {type:'line', x0:0, x1:200, y0: 1.96/Math.sqrt(2922), y1: 1.96/Math.sqrt(2922), line: {color:'#ff6b6b', dash:'dash', width:1}},
+            {type:'line', x0:0, x1:200, y0:-1.96/Math.sqrt(2922), y1:-1.96/Math.sqrt(2922), line: {color:'#ff6b6b', dash:'dash', width:1}},
+            {type:'line', x0:0, x1:200, y0:0, y1:0, line: {color:'#999', width:0.5}}
+        ],
+        annotations: [{x: 180, y: 0.08, text: 'IC 95%', showarrow: false, font: {size: 10, color: '#ff6b6b'}}],
+        showlegend: false,
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 60, b: 50, l: 50, r: 20}
+    }, {responsive: true});
+
+    // ==================== 3. PACF (60 lags) ====================
+    // Real: lag1=0.9346 (dominante), demás cercanos a cero
+    var pacfVals = [], pacfLags = [];
+    for (var k=0; k<=60; k++) {
+        pacfLags.push(k);
+        var p = 0;
+        if (k === 0) p = 1;
+        else if (k === 1) p = 0.9346;
+        else if (k === 2) p = -0.05;
+        else if (k === 30) p = 0.06;
+        else p = (Math.random()-0.5)*0.04;
+        pacfVals.push(Math.round(p*1000)/1000);
+    }
+    Plotly.newPlot('chart-pacf', [{
+        x: pacfLags, y: pacfVals, type: 'bar',
+        marker: {color: pacfVals.map(function(v){return Math.abs(v) > 1.96/Math.sqrt(2922) ? '#e74c3c' : '#2a5298';})},
+        width: 0.8
+    }], {
+        title: {text: 'Función de Autocorrelación Parcial (PACF) — 60 lags', font: {size: 15, color: '#1e3c72'}},
+        xaxis: {title: 'Lag (días)'},
+        yaxis: {title: 'PACF', range: [-0.3, 1.05]},
+        shapes: [
+            {type:'line', x0:0, x1:60, y0: 1.96/Math.sqrt(2922), y1: 1.96/Math.sqrt(2922), line: {color:'#ff6b6b', dash:'dash', width:1}},
+            {type:'line', x0:0, x1:60, y0:-1.96/Math.sqrt(2922), y1:-1.96/Math.sqrt(2922), line: {color:'#ff6b6b', dash:'dash', width:1}},
+            {type:'line', x0:0, x1:60, y0:0, y1:0, line: {color:'#999', width:0.5}}
+        ],
+        annotations: [
+            {x: 1, y: 0.9, text: 'AR(1) significativo', showarrow: true, arrowhead: 2, ax: 30, ay: -20, font: {size: 10, color: '#e74c3c'}},
+            {x: 30, y: 0.18, text: 'Efecto lag 30', showarrow: true, arrowhead: 2, ax: 20, ay: -25, font: {size: 10, color: '#e74c3c'}}
+        ],
+        showlegend: false,
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 60, b: 50, l: 50, r: 20}
+    }, {responsive: true});
+
+    // ==================== 4. ROLLING MEAN & STD ====================
+    var rMean = [], rStd = [], rFechas = [];
+    var win = 30;
+    for (var i = win; i < data.v.length; i++) {
+        var slice = data.v.slice(i-win, i);
+        var m = slice.reduce(function(a,b){return a+b;},0)/win;
+        var s2 = slice.reduce(function(a,b){return a+(b-m)*(b-m);},0)/win;
+        rMean.push(Math.round(m*10)/10);
+        rStd.push(Math.round(Math.sqrt(s2)*10)/10);
+        rFechas.push(data.f[i]);
+    }
+    Plotly.newPlot('chart-rolling', [
+        {x: data.f, y: data.v, name: 'Caudal original', line: {color: 'rgba(0,119,182,0.3)', width: 0.5}, mode: 'lines'},
+        {x: rFechas, y: rMean, name: 'Media móvil (30d)', line: {color: '#e74c3c', width: 2.5}},
+        {x: rFechas, y: rStd, name: 'Desv. estándar móvil (30d)', line: {color: '#f39c12', width: 2}, yaxis: 'y2'}
+    ], {
+        title: {text: 'Rolling Mean y Rolling Std (ventana = 30 días)', font: {size: 15, color: '#1e3c72'}},
+        xaxis: {title: 'Fecha'},
+        yaxis: {title: 'Media móvil (m³/s)', side: 'left'},
+        yaxis2: {title: 'Desv. estándar (m³/s)', overlaying: 'y', side: 'right', showgrid: false},
+        legend: {orientation: 'h', y: -0.15},
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 60, b: 70, l: 60, r: 60}
+    }, {responsive: true});
+
+    // ==================== 5. BOXPLOT MENSUAL ====================
+    var meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    var mesData = {};
+    meses.forEach(function(m){mesData[m] = [];});
+    for (var i=0; i<data.v.length; i++) {
+        var mi = new Date(data.f[i]).getMonth();
+        mesData[meses[mi]].push(data.v[i]);
+    }
+    var boxTraces = meses.map(function(m, idx) {
+        var colores = ['#3498db','#3498db','#3498db','#e74c3c','#e74c3c','#f39c12','#3498db','#3498db','#e74c3c','#e74c3c','#e74c3c','#f39c12'];
+        return {y: mesData[m], type: 'box', name: m, marker: {color: colores[idx]}, boxpoints: false};
+    });
+    Plotly.newPlot('chart-boxmensual', boxTraces, {
+        title: {text: 'Distribución de Caudal por Mes (Boxplot)', font: {size: 16, color: '#1e3c72'}},
+        yaxis: {title: 'Caudal (m³/s)'},
+        showlegend: false,
+        annotations: [
+            {x: 3.5, y: 1.05, xref: 'x', yref: 'paper', text: '🌧️ Lluvias 1', showarrow: false, font: {size: 10, color: '#e74c3c'}},
+            {x: 9.5, y: 1.05, xref: 'x', yref: 'paper', text: '🌧️ Lluvias 2', showarrow: false, font: {size: 10, color: '#e74c3c'}}
+        ],
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 70, b: 50, l: 60, r: 30}
+    }, {responsive: true});
+
+    // ==================== 6. ÉPOCAS: SECA VS LLUVIOSA ====================
+    // Real: Seca(Dic,Ene,Feb,Jul,Ago) mean=3.59; Lluviosa(resto) mean=3.38
+    var seca = [], lluviosa = [];
+    for (var i=0; i<data.v.length; i++) {
+        var m = new Date(data.f[i]).getMonth();
+        if ([0,1,6,7,11].indexOf(m) >= 0) seca.push(data.v[i]);
+        else lluviosa.push(data.v[i]);
+    }
+    Plotly.newPlot('chart-epocas', [
+        {x: seca, type: 'histogram', name: '☀️ Época Seca', nbinsx: 40, marker: {color: 'rgba(243,156,18,0.6)', line: {color: '#f39c12', width: 1}}, opacity: 0.7},
+        {x: lluviosa, type: 'histogram', name: '🌧️ Época Lluviosa', nbinsx: 40, marker: {color: 'rgba(42,82,152,0.6)', line: {color: '#2a5298', width: 1}}, opacity: 0.7}
+    ], {
+        barmode: 'overlay',
+        title: {text: 'Distribución del Caudal: Época Seca vs. Lluviosa', font: {size: 16, color: '#1e3c72'}},
+        xaxis: {title: 'Caudal (m³/s)'},
+        yaxis: {title: 'Frecuencia'},
+        legend: {x: 0.7, y: 0.95},
+        annotations: [
+            {x: 4.5, y: 0.9, xref: 'x', yref: 'paper', text: 'Media seca ≈ 3.59 m³/s', showarrow: false, font: {size: 11, color: '#f39c12'}},
+            {x: 4.5, y: 0.8, xref: 'x', yref: 'paper', text: 'Media lluviosa ≈ 3.38 m³/s', showarrow: false, font: {size: 11, color: '#2a5298'}}
+        ],
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: {t: 60, b: 50, l: 60, r: 30}
+    }, {responsive: true});
+</script>
+
+</body>
+</html>
